@@ -175,6 +175,182 @@
                 0 2px 8px rgba(138, 43, 226, 0.4);
         }
 
+        .intro {
+            text-align: center;
+            margin-bottom: 32px;
+            color: rgba(235, 235, 245, 0.85);
+        }
+
+        .intro-tagline {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            margin-bottom: 8px;
+        }
+
+        .intro-subtitle {
+            font-size: 16px;
+            color: rgba(235, 235, 245, 0.65);
+            max-width: 640px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+
+        .insight-card {
+            background: linear-gradient(145deg, rgba(30, 30, 45, 0.85), rgba(18, 18, 32, 0.95));
+            border-radius: 18px;
+            padding: 22px 24px;
+            border: 1px solid rgba(138, 43, 226, 0.18);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::after {
+            content: '';
+            position: absolute;
+            top: -40%;
+            right: -40%;
+            width: 70%;
+            height: 140%;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.22) 0%, transparent 65%);
+            opacity: 0.6;
+        }
+
+        .insight-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(235, 235, 245, 0.58);
+        }
+
+        .insight-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.4px;
+        }
+
+        .insight-meta {
+            font-size: 13px;
+            color: rgba(235, 235, 245, 0.6);
+            line-height: 1.5;
+        }
+
+        .highlights {
+            margin-bottom: 36px;
+        }
+
+        .highlights-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            color: rgba(235, 235, 245, 0.85);
+            letter-spacing: -0.2px;
+            margin-bottom: 14px;
+        }
+
+        .highlights-title span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .highlights-title svg {
+            width: 18px;
+            height: 18px;
+            fill: rgba(138, 43, 226, 0.8);
+        }
+
+        .highlight-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .highlight-pill {
+            background: rgba(30, 30, 45, 0.8);
+            border: 1px solid rgba(138, 43, 226, 0.25);
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: rgba(235, 235, 245, 0.9);
+            display: inline-flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 170px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .highlight-pill small {
+            font-size: 11px;
+            color: rgba(235, 235, 245, 0.55);
+            letter-spacing: 0.2px;
+        }
+
+        .highlight-pill--full {
+            border-color: rgba(255, 214, 102, 0.55);
+            background: rgba(255, 214, 102, 0.14);
+        }
+
+        .highlight-pill--new {
+            border-color: rgba(137, 148, 255, 0.45);
+            background: rgba(120, 132, 255, 0.12);
+        }
+
+        .highlight-pill--first-quarter,
+        .highlight-pill--last-quarter {
+            border-color: rgba(143, 231, 201, 0.45);
+            background: rgba(143, 231, 201, 0.12);
+        }
+
+        .highlight-pill.muted {
+            border-style: dashed;
+            border-color: rgba(235, 235, 245, 0.18);
+            color: rgba(235, 235, 245, 0.6);
+        }
+
+        .phase-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 18px 0 6px;
+            color: rgba(235, 235, 245, 0.6);
+            font-size: 13px;
+            letter-spacing: 0.2px;
+        }
+
+        .phase-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .phase-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            background: rgba(235, 235, 245, 0.4);
+            box-shadow: 0 0 8px rgba(138, 43, 226, 0.3);
+        }
+
+        .phase-dot--full { background: #ffd666; }
+        .phase-dot--new { background: #5b5f7a; }
+        .phase-dot--waxing { background: #8a2be2; }
+        .phase-dot--waning { background: #5b9fff; }
+
         .calendar-header {
             text-align: center;
             margin-bottom: 24px;
@@ -351,6 +527,28 @@
                 font-size: 28px;
                 margin-bottom: 24px;
             }
+
+            .intro {
+                margin-bottom: 24px;
+            }
+
+            .intro-tagline {
+                font-size: 18px;
+            }
+
+            .intro-subtitle {
+                font-size: 15px;
+            }
+
+            .insights-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+                margin-bottom: 28px;
+            }
+
+            .insight-card {
+                padding: 18px 20px;
+            }
             
             .controls {
                 flex-direction: column;
@@ -405,10 +603,14 @@
                 padding: 12px 4px;
                 font-size: 12px;
             }
-            
+
             .calendar-header {
                 font-size: 24px;
                 margin-bottom: 20px;
+            }
+
+            .highlight-pills {
+                gap: 8px;
             }
         }
         
@@ -431,7 +633,11 @@
                 gap: 12px;
                 margin-bottom: 24px;
             }
-            
+
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+
             select, input, button {
                 font-size: 16px;
                 padding: 12px 16px;
@@ -489,6 +695,29 @@
 <body>
     <div class="container">
         <h1>🌙 Moon Calendar</h1>
+
+        <div class="intro">
+            <p class="intro-tagline">Follow the lunar story for any month.</p>
+            <p class="intro-subtitle">Pick a timeframe to explore each night’s moon phase, see the next major events, and plan the perfect stargazing session.</p>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-card">
+                <span class="insight-label">Now</span>
+                <span class="insight-value" id="current-phase-name">Loading…</span>
+                <span class="insight-meta" id="current-phase-detail">Preparing moon data…</span>
+            </div>
+            <div class="insight-card">
+                <span class="insight-label">Next Full Moon</span>
+                <span class="insight-value" id="next-full-date">Loading…</span>
+                <span class="insight-meta" id="next-full-context">—</span>
+            </div>
+            <div class="insight-card">
+                <span class="insight-label">Next New Moon</span>
+                <span class="insight-value" id="next-new-date">Loading…</span>
+                <span class="insight-meta" id="next-new-context">—</span>
+            </div>
+        </div>
         
         <div class="controls">
             <div class="input-group">
@@ -517,12 +746,36 @@
             <button onclick="generateCalendar()">Update</button>
         </div>
 
+        <div class="highlights">
+            <div class="highlights-title">
+                <span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.75a.75.75 0 0 1 .677.418l1.44 2.832 3.126.456a.75.75 0 0 1 .416 1.28l-2.26 2.203.534 3.11a.75.75 0 0 1-1.088.791L12 13.65l-2.845 1.49a.75.75 0 0 1-1.088-.79l.534-3.111-2.26-2.204a.75.75 0 0 1 .416-1.28l3.126-.456 1.44-2.832A.75.75 0 0 1 12 3.75Z"/></svg>
+                    Upcoming highlights
+                </span>
+            </div>
+            <div class="highlight-pills" id="highlight-dates">
+                <span class="highlight-pill muted">Loading…</span>
+            </div>
+        </div>
+
+        <div class="phase-legend">
+            <div class="phase-legend-item"><span class="phase-dot phase-dot--new"></span>New moon</div>
+            <div class="phase-legend-item"><span class="phase-dot phase-dot--waxing"></span>Waxing phases</div>
+            <div class="phase-legend-item"><span class="phase-dot phase-dot--full"></span>Full moon</div>
+            <div class="phase-legend-item"><span class="phase-dot phase-dot--waning"></span>Waning phases</div>
+        </div>
+
         <div id="results"></div>
     </div>
 
     <script>
         // Initialize with current date
         const now = new Date();
+        const MONTH_NAMES = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         document.getElementById('month').value = now.getMonth() + 1;
         document.getElementById('year').value = now.getFullYear();
 
@@ -545,14 +798,137 @@
             }
         }
 
+        function setInsightsPlaceholder(message) {
+            const currentName = document.getElementById('current-phase-name');
+            const currentDetail = document.getElementById('current-phase-detail');
+            const nextFullDate = document.getElementById('next-full-date');
+            const nextFullContext = document.getElementById('next-full-context');
+            const nextNewDate = document.getElementById('next-new-date');
+            const nextNewContext = document.getElementById('next-new-context');
+            const highlightContainer = document.getElementById('highlight-dates');
+
+            if (currentName) currentName.textContent = '—';
+            if (currentDetail) currentDetail.textContent = message;
+            if (nextFullDate) nextFullDate.textContent = '—';
+            if (nextFullContext) nextFullContext.textContent = message;
+            if (nextNewDate) nextNewDate.textContent = '—';
+            if (nextNewContext) nextNewContext.textContent = message;
+            if (highlightContainer) {
+                highlightContainer.innerHTML = '<span class="highlight-pill muted">' + message + '</span>';
+            }
+        }
+
+        function updateInsights(year, month) {
+            const monthStart = new Date(year, month - 1, 1);
+            const monthEnd = new Date(year, month, 0);
+            const daysInMonth = monthEnd.getDate();
+            const isCurrentMonth = now.getFullYear() === year && (now.getMonth() + 1) === month;
+            const referenceDay = Math.min(15, daysInMonth);
+            const referenceDate = isCurrentMonth ? new Date(now) : new Date(year, month - 1, referenceDay);
+            const phaseInfo = getMoonPhaseForDate(referenceDate);
+
+            const currentName = document.getElementById('current-phase-name');
+            const currentDetail = document.getElementById('current-phase-detail');
+            if (currentName) currentName.textContent = phaseInfo.name;
+            if (currentDetail) {
+                const descriptor = isCurrentMonth ? 'Today' : MONTH_NAMES[month - 1];
+                currentDetail.textContent = `${descriptor} · ${formatDate(referenceDate)} · ${phaseInfo.illumination}% illuminated`;
+            }
+
+            const nextFull = findNextPhase(monthStart, 'full', monthEnd);
+            const nextFullDate = document.getElementById('next-full-date');
+            const nextFullContext = document.getElementById('next-full-context');
+            if (nextFull && nextFullDate && nextFullContext) {
+                nextFullDate.textContent = formatDate(nextFull.date);
+                nextFullContext.textContent = nextFull.withinRange ? 'Glows brightest this month' : `Next on ${formatMonthYear(nextFull.date)}`;
+            } else {
+                if (nextFullDate) nextFullDate.textContent = '—';
+                if (nextFullContext) nextFullContext.textContent = 'No data available';
+            }
+
+            const nextNew = findNextPhase(monthStart, 'new', monthEnd);
+            const nextNewDate = document.getElementById('next-new-date');
+            const nextNewContext = document.getElementById('next-new-context');
+            if (nextNew && nextNewDate && nextNewContext) {
+                nextNewDate.textContent = formatDate(nextNew.date);
+                nextNewContext.textContent = nextNew.withinRange ? 'Dark skies this month' : `Next on ${formatMonthYear(nextNew.date)}`;
+            } else {
+                if (nextNewDate) nextNewDate.textContent = '—';
+                if (nextNewContext) nextNewContext.textContent = 'No data available';
+            }
+
+            const highlights = getPhaseHighlights(year, month);
+            const highlightContainer = document.getElementById('highlight-dates');
+            if (highlightContainer) {
+                if (highlights.length) {
+                    highlightContainer.innerHTML = highlights.map(({ phase, name, date }) => {
+                        return `<span class="highlight-pill ${getHighlightClass(phase)}">${name}<small>${formatDate(date)}</small></span>`;
+                    }).join('');
+                } else {
+                    highlightContainer.innerHTML = '<span class="highlight-pill muted">No major phase milestones in this month.</span>';
+                }
+            }
+        }
+
+        function findNextPhase(startDate, targetPhase, limitDate = null) {
+            const searchDate = new Date(startDate);
+            for (let i = 0; i < 120; i++) {
+                const phaseInfo = getMoonPhaseForDate(searchDate);
+                if (phaseInfo.phase === targetPhase) {
+                    const withinRange = limitDate ? searchDate <= limitDate : true;
+                    return { date: new Date(searchDate), withinRange };
+                }
+                searchDate.setDate(searchDate.getDate() + 1);
+            }
+            return null;
+        }
+
+        function getPhaseHighlights(year, month) {
+            const highlights = [];
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const highlightPhases = ['full', 'new', 'first-quarter', 'last-quarter'];
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month - 1, day);
+                const phaseInfo = getMoonPhaseForDate(date);
+                if (highlightPhases.includes(phaseInfo.phase)) {
+                    highlights.push({ phase: phaseInfo.phase, name: phaseInfo.name, date });
+                }
+            }
+
+            return highlights;
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString(undefined, {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatMonthYear(date) {
+            return date.toLocaleDateString(undefined, {
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function getHighlightClass(phase) {
+            switch (phase) {
+                case 'full':
+                    return 'highlight-pill--full';
+                case 'new':
+                    return 'highlight-pill--new';
+                case 'first-quarter':
+                case 'last-quarter':
+                    return 'highlight-pill--first-quarter';
+                default:
+                    return '';
+            }
+        }
+
         function displayCalendar(year, month) {
-            const monthNames = [
-                'January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-            ];
-            
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
             const daysInMonth = lastDay.getDate();
@@ -564,13 +940,13 @@
 
             let html = `
                 <div class="calendar-header">
-                    ${monthNames[month - 1]} ${year}
+                    ${MONTH_NAMES[month - 1]} ${year}
                 </div>
                 <div class="calendar-grid">
             `;
 
             // Add day headers
-            dayNames.forEach(day => {
+            DAY_NAMES.forEach(day => {
                 html += `<div class="day-header">${day}</div>`;
             });
 
@@ -644,6 +1020,7 @@
             html += '</div>';
             
             document.getElementById('results').innerHTML = html;
+            updateInsights(year, month);
         }
 
         function getMoonPhaseForDate(date) {
@@ -733,6 +1110,7 @@
 
         function showError(message) {
             document.getElementById('results').innerHTML = `<div class="error">${message}</div>`;
+            setInsightsPlaceholder(message);
         }
 
         // Generate calendar for current month on load
