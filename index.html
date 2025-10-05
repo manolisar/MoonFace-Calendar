@@ -442,31 +442,60 @@
             height: 36px;
             border-radius: 50%;
             position: relative;
-            background: rgba(15, 15, 25, 0.9);
             margin-bottom: 8px;
-            border: 1px solid rgba(138, 43, 226, 0.2);
+            background: radial-gradient(circle at 45% 32%, #fefced 0%, #ede5ff 56%, #cbbffd 74%, #17152d 100%);
             box-shadow: 
-                0 2px 8px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
+                0 2px 8px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            transition: transform 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .moon-mini::before,
+        .moon-mini::after {
+            content: '';
+            position: absolute;
+            inset: -3%;
+            border-radius: 50%;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+        }
+
+        .moon-mini::before {
+            background: radial-gradient(circle at 50% 50%, rgba(8, 10, 36, 0.95) 56%, rgba(8, 10, 36, 0.15) 78%, rgba(8, 10, 36, 0) 92%);
+            transform: translateX(var(--shadow-shift, 0%)) scaleX(var(--shadow-scale, 1.1));
+            opacity: var(--shadow-opacity, 0.4);
+            mix-blend-mode: multiply;
+        }
+
+        .moon-mini::after {
+            background: radial-gradient(circle at 65% 32%, rgba(255, 255, 255, var(--glow, 0.45)) 0%, rgba(255, 255, 255, 0.05) 48%, rgba(255, 255, 255, 0) 72%);
+            transform: translateX(var(--highlight-shift, 0%));
+            opacity: 0.9;
+            mix-blend-mode: screen;
+        }
+
+        .moon-mini[data-orbit="waning"]::after {
+            background: radial-gradient(circle at 35% 32%, rgba(255, 255, 255, var(--glow, 0.45)) 0%, rgba(255, 255, 255, 0.05) 48%, rgba(255, 255, 255, 0) 72%);
+        }
+
+        .moon-mini[data-phase="full"]::before {
+            opacity: 0;
+        }
+
+        .moon-mini[data-phase="new"] {
+            background: radial-gradient(circle at 50% 50%, #141328 0%, #070613 100%);
+        }
+
+        .moon-mini[data-phase="new"]::after {
+            opacity: 0.25;
         }
 
         .calendar-day:hover .moon-mini {
-            transform: scale(1.1);
+            transform: scale(1.08);
             box-shadow: 
-                0 4px 12px rgba(138, 43, 226, 0.3),
-                0 0 20px rgba(138, 43, 226, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-
-        .moon-mini-light {
-            position: absolute;
-            top: 0;
-            border-radius: 50%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #f5f0ff, #e8d9ff, #d4b3ff);
-            box-shadow: 0 0 15px rgba(212, 179, 255, 0.5);
+                0 6px 14px rgba(138, 43, 226, 0.28),
+                0 0 24px rgba(138, 43, 226, 0.22);
         }
 
         .phase-info {
@@ -782,22 +811,29 @@
         const J2000 = 2451545;
         const OBLIQUITY = RAD * 23.4397;
         const SUN_DISTANCE = 149598000; // km
-        const PHASE_BANDS = [
-            { key: 'new',            name: 'New Moon',        threshold: 0.0625 },
-            { key: 'waxing-crescent', name: 'Waxing Crescent',  threshold: 0.1875 },
-            { key: 'first-quarter',  name: 'First Quarter',   threshold: 0.3125 },
-            { key: 'waxing-gibbous', name: 'Waxing Gibbous',   threshold: 0.4375 },
-            { key: 'full',           name: 'Full Moon',       threshold: 0.5625 },
-            { key: 'waning-gibbous', name: 'Waning Gibbous',   threshold: 0.6875 },
-            { key: 'last-quarter',   name: 'Last Quarter',    threshold: 0.8125 },
-            { key: 'waning-crescent',name: 'Waning Crescent', threshold: 0.9375 }
+        const PRIMARY_PHASES = [
+            { key: 'new', name: 'New Moon', target: 0 },
+            { key: 'first-quarter', name: 'First Quarter', target: 0.25 },
+            { key: 'full', name: 'Full Moon', target: 0.5 },
+            { key: 'last-quarter', name: 'Last Quarter', target: 0.75 }
         ];
-        const PHASE_TARGETS = {
-            'new': 0,
-            'first-quarter': 0.25,
-            'full': 0.5,
-            'last-quarter': 0.75
+        const PHASE_NAMES = {
+            'new': 'New Moon',
+            'waxing-crescent': 'Waxing Crescent',
+            'first-quarter': 'First Quarter',
+            'waxing-gibbous': 'Waxing Gibbous',
+            'full': 'Full Moon',
+            'waning-gibbous': 'Waning Gibbous',
+            'last-quarter': 'Last Quarter',
+            'waning-crescent': 'Waning Crescent'
         };
+        const PHASE_TARGETS = PRIMARY_PHASES.reduce((acc, phase) => {
+            acc[phase.key] = phase.target;
+            return acc;
+        }, {});
+        const MAJOR_PHASE_THRESHOLD = 0.012;
+        const MAJOR_PHASE_LEEWAY = 0.004;
+        const PHASE_MATCH_TOLERANCE = 0.015;
         document.getElementById('month').value = now.getMonth() + 1;
         document.getElementById('year').value = now.getFullYear();
 
@@ -883,13 +919,50 @@
             return Math.min(diff, 1 - diff);
         }
 
+        function signedPhaseDelta(age, target) {
+            return (((age - target) + 0.5) % 1) - 0.5;
+        }
+
         function getPhaseFromAge(age) {
-            for (let i = 0; i < PHASE_BANDS.length; i++) {
-                if (age < PHASE_BANDS[i].threshold) {
-                    return { key: PHASE_BANDS[i].key, name: PHASE_BANDS[i].name };
+            const normalized = ((age % 1) + 1) % 1;
+            let bestPrimary = null;
+
+            for (const phase of PRIMARY_PHASES) {
+                const diff = phaseDistance(normalized, phase.target);
+                if (diff <= MAJOR_PHASE_THRESHOLD) {
+                    const signed = signedPhaseDelta(normalized, phase.target);
+                    if (signed <= MAJOR_PHASE_LEEWAY) {
+                        if (!bestPrimary || diff < bestPrimary.diff) {
+                            bestPrimary = { key: phase.key, name: phase.name, diff, signed, target: phase.target };
+                        }
+                    }
                 }
             }
-            return { key: 'new', name: 'New Moon' };
+
+            if (bestPrimary) {
+                return {
+                    key: bestPrimary.key,
+                    name: bestPrimary.name,
+                    primary: {
+                        key: bestPrimary.key,
+                        name: bestPrimary.name,
+                        diff: bestPrimary.diff,
+                        signed: bestPrimary.signed,
+                        target: bestPrimary.target
+                    }
+                };
+            }
+
+            if (normalized < 0.25) {
+                return { key: 'waxing-crescent', name: PHASE_NAMES['waxing-crescent'] };
+            }
+            if (normalized < 0.5) {
+                return { key: 'waxing-gibbous', name: PHASE_NAMES['waxing-gibbous'] };
+            }
+            if (normalized < 0.75) {
+                return { key: 'waning-gibbous', name: PHASE_NAMES['waning-gibbous'] };
+            }
+            return { key: 'waning-crescent', name: PHASE_NAMES['waning-crescent'] };
         }
 
         function getMoonPhaseForDate(date) {
@@ -918,7 +991,8 @@
                 name: phase.name,
                 illumination: illuminationPercent,
                 age: bestSample.age,
-                sampleDate: bestSample.sampleDate
+                sampleDate: bestSample.sampleDate,
+                primaryPhase: phase.primary || null
             };
         }
 
@@ -1026,12 +1100,19 @@
             const targetAge = PHASE_TARGETS[targetPhase];
             const limitMs = limitDate ? new Date(limitDate.getFullYear(), limitDate.getMonth(), limitDate.getDate()).getTime() : null;
             const maxDays = limitDate ? Math.ceil((limitMs - cursor.getTime()) / (1000 * 60 * 60 * 24)) + 60 : 160;
-            const tolerance = 0.04;
+            const tolerance = PHASE_MATCH_TOLERANCE;
 
             for (let i = 0; i < maxDays; i++) {
                 const phaseInfo = getMoonPhaseForDate(cursor);
+                const primary = phaseInfo.primaryPhase;
+                if (primary && primary.key === targetPhase) {
+                    const withinRange = limitMs ? cursor.getTime() <= limitMs : true;
+                    return { date: new Date(cursor), withinRange, phaseInfo };
+                }
+
                 const diff = phaseDistance(phaseInfo.age, targetAge);
-                if (diff <= tolerance) {
+                const signed = signedPhaseDelta(phaseInfo.age, targetAge);
+                if (diff <= tolerance && signed <= MAJOR_PHASE_LEEWAY) {
                     const withinRange = limitMs ? cursor.getTime() <= limitMs : true;
                     return { date: new Date(cursor), withinRange, phaseInfo };
                 }
@@ -1064,9 +1145,23 @@
                 let best = null;
 
                 dailyData.forEach(entry => {
-                    const diff = phaseDistance(entry.age, targetAge);
-                    if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-6 && entry.illumination > best.illumination)) {
-                        best = { ...entry, diff };
+                    const primary = entry.primaryPhase;
+                    let diff;
+                    let priority = 2;
+
+                    if (primary && primary.key === target.phase) {
+                        diff = primary.diff;
+                        priority = 0;
+                    } else {
+                        diff = phaseDistance(entry.age, targetAge);
+                        const signed = signedPhaseDelta(entry.age, targetAge);
+                        if (signed <= MAJOR_PHASE_LEEWAY) {
+                            priority = 1;
+                        }
+                    }
+
+                    if (!best || priority < best.priority || (priority === best.priority && diff < best.diff) || (priority === best.priority && Math.abs(diff - best.diff) < 1e-6 && entry.illumination > best.illumination)) {
+                        best = { ...entry, diff, priority };
                     }
                 });
 
@@ -1167,9 +1262,7 @@
                 html += `
                     <div class="calendar-day other-month">
                         <div class="day-number">${dayNum}</div>
-                        <div class="moon-mini">
-                            ${getMoonMiniVisual(phaseInfo.phase, phaseInfo.illumination)}
-                        </div>
+                        ${getMoonMiniVisual(phaseInfo)}
                         <div class="phase-info">
                             <div class="phase-name">${getShortPhaseName(phaseInfo.name)}</div>
                             <div class="illumination">${phaseInfo.illumination}%</div>
@@ -1187,9 +1280,7 @@
                 html += `
                     <div class="calendar-day${isToday ? ' today' : ''}">
                         <div class="day-number">${day}</div>
-                        <div class="moon-mini">
-                            ${getMoonMiniVisual(phaseInfo.phase, phaseInfo.illumination)}
-                        </div>
+                        ${getMoonMiniVisual(phaseInfo)}
                         <div class="phase-info">
                             <div class="phase-name">${getShortPhaseName(phaseInfo.name)}</div>
                             <div class="illumination">${phaseInfo.illumination}%</div>
@@ -1211,9 +1302,7 @@
                 html += `
                     <div class="calendar-day other-month">
                         <div class="day-number">${day}</div>
-                        <div class="moon-mini">
-                            ${getMoonMiniVisual(phaseInfo.phase, phaseInfo.illumination)}
-                        </div>
+                        ${getMoonMiniVisual(phaseInfo)}
                         <div class="phase-info">
                             <div class="phase-name">${getShortPhaseName(phaseInfo.name)}</div>
                             <div class="illumination">${phaseInfo.illumination}%</div>
@@ -1228,29 +1317,25 @@
             updateInsights(year, month);
         }
 
-        function getMoonMiniVisual(phase, illumination) {
-            const opacity = illumination / 100;
-            
-            switch (phase) {
-                case 'new':
-                    return '<div class="moon-mini-light" style="opacity: 0;"></div>';
-                case 'waxing-crescent':
-                    return `<div class="moon-mini-light" style="clip-path: polygon(50% 0%, ${50 + opacity * 50}% 0%, ${50 + opacity * 50}% 100%, 50% 100%); opacity: ${Math.max(0.1, opacity)};"></div>`;
-                case 'first-quarter':
-                    return '<div class="moon-mini-light" style="clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);"></div>';
-                case 'waxing-gibbous':
-                    return `<div class="moon-mini-light" style="clip-path: polygon(${50 - opacity * 30}% 0%, 100% 0%, 100% 100%, ${50 - opacity * 30}% 100%);"></div>`;
-                case 'full':
-                    return '<div class="moon-mini-light" style="opacity: 1;"></div>';
-                case 'waning-gibbous':
-                    return `<div class="moon-mini-light" style="clip-path: polygon(0% 0%, ${50 + opacity * 30}% 0%, ${50 + opacity * 30}% 100%, 0% 100%);"></div>`;
-                case 'last-quarter':
-                    return '<div class="moon-mini-light" style="clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);"></div>';
-                case 'waning-crescent':
-                    return `<div class="moon-mini-light" style="clip-path: polygon(${50 - opacity * 50}% 0%, 50% 0%, 50% 100%, ${50 - opacity * 50}% 100%); opacity: ${Math.max(0.1, opacity)};"></div>`;
-                default:
-                    return '<div class="moon-mini-light"></div>';
-            }
+        function getMoonMiniVisual(phaseInfo) {
+            const illuminationRatio = Math.max(0, Math.min(1, phaseInfo.illumination / 100));
+            const normalizedAge = ((phaseInfo.age % 1) + 1) % 1;
+            const shadowShift = (normalizedAge - 0.5) * 80;
+            const shadowScale = 1 + (1 - illuminationRatio) * 0.65;
+            const shadowOpacity = Math.min(0.92, 0.2 + (1 - illuminationRatio) * 0.85);
+            const highlightShift = (0.5 - normalizedAge) * 50;
+            const glow = 0.3 + illuminationRatio * 0.4;
+            const orientation = normalizedAge <= 0.5 ? 'waxing' : 'waning';
+
+            const style = [
+                `--shadow-shift:${shadowShift}%`,
+                `--shadow-scale:${shadowScale}`,
+                `--shadow-opacity:${shadowOpacity}`,
+                `--highlight-shift:${highlightShift}%`,
+                `--glow:${glow}`
+            ].join('; ');
+
+            return `<div class="moon-mini" data-phase="${phaseInfo.phase}" data-orbit="${orientation}" style="${style}"></div>`;
         }
 
         function getShortPhaseName(fullName) {
