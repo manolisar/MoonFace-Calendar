@@ -776,8 +776,151 @@
             'July', 'August', 'September', 'October', 'November', 'December'
         ];
         const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const DAY_MS = 1000 * 60 * 60 * 24;
+        const RAD = Math.PI / 180;
+        const J1970 = 2440588;
+        const J2000 = 2451545;
+        const OBLIQUITY = RAD * 23.4397;
+        const SUN_DISTANCE = 149598000; // km
+        const PHASE_BANDS = [
+            { key: 'new',            name: 'New Moon',        threshold: 0.0625 },
+            { key: 'waxing-crescent', name: 'Waxing Crescent',  threshold: 0.1875 },
+            { key: 'first-quarter',  name: 'First Quarter',   threshold: 0.3125 },
+            { key: 'waxing-gibbous', name: 'Waxing Gibbous',   threshold: 0.4375 },
+            { key: 'full',           name: 'Full Moon',       threshold: 0.5625 },
+            { key: 'waning-gibbous', name: 'Waning Gibbous',   threshold: 0.6875 },
+            { key: 'last-quarter',   name: 'Last Quarter',    threshold: 0.8125 },
+            { key: 'waning-crescent',name: 'Waning Crescent', threshold: 0.9375 }
+        ];
+        const PHASE_TARGETS = {
+            'new': 0,
+            'first-quarter': 0.25,
+            'full': 0.5,
+            'last-quarter': 0.75
+        };
         document.getElementById('month').value = now.getMonth() + 1;
         document.getElementById('year').value = now.getFullYear();
+
+        function toJulian(date) {
+            return date.valueOf() / DAY_MS - 0.5 + J1970;
+        }
+
+        function toDays(date) {
+            return toJulian(date) - J2000;
+        }
+
+        function rightAscension(l, b) {
+            return Math.atan2(Math.sin(l) * Math.cos(OBLIQUITY) - Math.tan(b) * Math.sin(OBLIQUITY), Math.cos(l));
+        }
+
+        function declination(l, b) {
+            return Math.asin(Math.sin(b) * Math.cos(OBLIQUITY) + Math.cos(b) * Math.sin(OBLIQUITY) * Math.sin(l));
+        }
+
+        function solarMeanAnomaly(d) {
+            return RAD * (357.5291 + 0.98560028 * d);
+        }
+
+        function eclipticLongitude(M) {
+            const C = RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+            const P = RAD * 102.9372;
+            return M + C + P + Math.PI;
+        }
+
+        function sunCoords(d) {
+            const M = solarMeanAnomaly(d);
+            const L = eclipticLongitude(M);
+            return {
+                dec: declination(L, 0),
+                ra: rightAscension(L, 0)
+            };
+        }
+
+        function moonCoords(d) {
+            const L = RAD * (218.316 + 13.176396 * d);
+            const M = RAD * (134.963 + 13.064993 * d);
+            const F = RAD * (93.272 + 13.229350 * d);
+
+            const l = L + RAD * 6.289 * Math.sin(M);
+            const b = RAD * 5.128 * Math.sin(F);
+            const dt = 385001 - 20905 * Math.cos(M);
+
+            return {
+                ra: rightAscension(l, b),
+                dec: declination(l, b),
+                dist: dt
+            };
+        }
+
+        function getMoonIllumination(date) {
+            const d = toDays(date);
+            const s = sunCoords(d);
+            const m = moonCoords(d);
+
+            const phi = Math.acos(
+                Math.sin(s.dec) * Math.sin(m.dec) +
+                Math.cos(s.dec) * Math.cos(m.dec) * Math.cos(s.ra - m.ra)
+            );
+
+            const inc = Math.atan2(SUN_DISTANCE * Math.sin(phi), m.dist - SUN_DISTANCE * Math.cos(phi));
+            const angle = Math.atan2(
+                Math.cos(s.dec) * Math.sin(s.ra - m.ra),
+                Math.sin(s.dec) * Math.cos(m.dec) - Math.cos(s.dec) * Math.sin(m.dec) * Math.cos(s.ra - m.ra)
+            );
+
+            const phase = 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math.PI;
+            const normalizedPhase = (phase + 1) % 1;
+
+            return {
+                fraction: (1 + Math.cos(inc)) / 2,
+                phase: normalizedPhase,
+                angle
+            };
+        }
+
+        function phaseDistance(age, target) {
+            const diff = Math.abs(age - target);
+            return Math.min(diff, 1 - diff);
+        }
+
+        function getPhaseFromAge(age) {
+            for (let i = 0; i < PHASE_BANDS.length; i++) {
+                if (age < PHASE_BANDS[i].threshold) {
+                    return { key: PHASE_BANDS[i].key, name: PHASE_BANDS[i].name };
+                }
+            }
+            return { key: 'new', name: 'New Moon' };
+        }
+
+        function getMoonPhaseForDate(date) {
+            const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            let bestSample = null;
+
+            for (let hour = 0; hour < 24; hour++) {
+                // sample at the middle of each hour to capture peaks near boundaries
+                const sample = new Date(dayStart.getTime() + hour * 60 * 60 * 1000 + 30 * 60 * 1000);
+                const metrics = getMoonIllumination(sample);
+                const fractionPercent = metrics.fraction * 100;
+
+                if (!bestSample || fractionPercent > bestSample.illumination) {
+                    bestSample = {
+                        illumination: fractionPercent,
+                        age: metrics.phase,
+                        sampleDate: sample
+                    };
+                }
+            }
+
+            const phase = getPhaseFromAge(bestSample.age);
+            const illuminationPercent = Math.max(0, Math.min(100, Math.round(bestSample.illumination)));
+            return {
+                phase: phase.key,
+                name: phase.name,
+                illumination: illuminationPercent,
+                age: bestSample.age,
+                sampleDate: bestSample.sampleDate
+            };
+        }
 
         function generateCalendar() {
             const month = parseInt(document.getElementById('month').value);
@@ -832,15 +975,19 @@
             if (currentName) currentName.textContent = phaseInfo.name;
             if (currentDetail) {
                 const descriptor = isCurrentMonth ? 'Today' : MONTH_NAMES[month - 1];
-                currentDetail.textContent = `${descriptor} · ${formatDate(referenceDate)} · ${phaseInfo.illumination}% illuminated`;
+                const sampleDate = phaseInfo.sampleDate || referenceDate;
+                currentDetail.textContent = `${descriptor} · ${formatDateWithTime(sampleDate)} · ${phaseInfo.illumination}% illuminated`;
             }
 
             const nextFull = findNextPhase(monthStart, 'full', monthEnd);
             const nextFullDate = document.getElementById('next-full-date');
             const nextFullContext = document.getElementById('next-full-context');
             if (nextFull && nextFullDate && nextFullContext) {
+                const peakDate = nextFull.phaseInfo?.sampleDate || nextFull.date;
                 nextFullDate.textContent = formatDate(nextFull.date);
-                nextFullContext.textContent = nextFull.withinRange ? 'Glows brightest this month' : `Next on ${formatMonthYear(nextFull.date)}`;
+                nextFullContext.textContent = nextFull.withinRange
+                    ? `Peaks ${formatDateTime(peakDate)} (${formatUTCTime(peakDate)})`
+                    : `Next on ${formatMonthYear(nextFull.date)}`;
             } else {
                 if (nextFullDate) nextFullDate.textContent = '—';
                 if (nextFullContext) nextFullContext.textContent = 'No data available';
@@ -850,8 +997,11 @@
             const nextNewDate = document.getElementById('next-new-date');
             const nextNewContext = document.getElementById('next-new-context');
             if (nextNew && nextNewDate && nextNewContext) {
+                const peakDate = nextNew.phaseInfo?.sampleDate || nextNew.date;
                 nextNewDate.textContent = formatDate(nextNew.date);
-                nextNewContext.textContent = nextNew.withinRange ? 'Dark skies this month' : `Next on ${formatMonthYear(nextNew.date)}`;
+                nextNewContext.textContent = nextNew.withinRange
+                    ? `Goes dark ${formatDateTime(peakDate)} (${formatUTCTime(peakDate)})`
+                    : `Next on ${formatMonthYear(nextNew.date)}`;
             } else {
                 if (nextNewDate) nextNewDate.textContent = '—';
                 if (nextNewContext) nextNewContext.textContent = 'No data available';
@@ -861,8 +1011,9 @@
             const highlightContainer = document.getElementById('highlight-dates');
             if (highlightContainer) {
                 if (highlights.length) {
-                    highlightContainer.innerHTML = highlights.map(({ phase, name, date }) => {
-                        return `<span class="highlight-pill ${getHighlightClass(phase)}">${name}<small>${formatDate(date)}</small></span>`;
+                    highlightContainer.innerHTML = highlights.map(({ phase, name, date, sampleDate }) => {
+                        const when = sampleDate || date;
+                        return `<span class="highlight-pill ${getHighlightClass(phase)}">${name}<small>${formatDateWithTime(when)}</small></span>`;
                     }).join('');
                 } else {
                     highlightContainer.innerHTML = '<span class="highlight-pill muted">No major phase milestones in this month.</span>';
@@ -871,32 +1022,61 @@
         }
 
         function findNextPhase(startDate, targetPhase, limitDate = null) {
-            const searchDate = new Date(startDate);
-            for (let i = 0; i < 120; i++) {
-                const phaseInfo = getMoonPhaseForDate(searchDate);
-                if (phaseInfo.phase === targetPhase) {
-                    const withinRange = limitDate ? searchDate <= limitDate : true;
-                    return { date: new Date(searchDate), withinRange };
+            const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const targetAge = PHASE_TARGETS[targetPhase];
+            const limitMs = limitDate ? new Date(limitDate.getFullYear(), limitDate.getMonth(), limitDate.getDate()).getTime() : null;
+            const maxDays = limitDate ? Math.ceil((limitMs - cursor.getTime()) / (1000 * 60 * 60 * 24)) + 60 : 160;
+            const tolerance = 0.04;
+
+            for (let i = 0; i < maxDays; i++) {
+                const phaseInfo = getMoonPhaseForDate(cursor);
+                const diff = phaseDistance(phaseInfo.age, targetAge);
+                if (diff <= tolerance) {
+                    const withinRange = limitMs ? cursor.getTime() <= limitMs : true;
+                    return { date: new Date(cursor), withinRange, phaseInfo };
                 }
-                searchDate.setDate(searchDate.getDate() + 1);
+                cursor.setDate(cursor.getDate() + 1);
             }
             return null;
         }
 
         function getPhaseHighlights(year, month) {
-            const highlights = [];
             const daysInMonth = new Date(year, month, 0).getDate();
-            const highlightPhases = ['full', 'new', 'first-quarter', 'last-quarter'];
+            const dailyData = [];
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month - 1, day);
                 const phaseInfo = getMoonPhaseForDate(date);
-                if (highlightPhases.includes(phaseInfo.phase)) {
-                    highlights.push({ phase: phaseInfo.phase, name: phaseInfo.name, date });
-                }
+                dailyData.push({ ...phaseInfo, date });
             }
 
-            return highlights;
+            const targets = [
+                { phase: 'new', name: 'New Moon' },
+                { phase: 'first-quarter', name: 'First Quarter' },
+                { phase: 'full', name: 'Full Moon' },
+                { phase: 'last-quarter', name: 'Last Quarter' }
+            ];
+
+            const results = [];
+
+            targets.forEach(target => {
+                const targetAge = PHASE_TARGETS[target.phase];
+                let best = null;
+
+                dailyData.forEach(entry => {
+                    const diff = phaseDistance(entry.age, targetAge);
+                    if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-6 && entry.illumination > best.illumination)) {
+                        best = { ...entry, diff };
+                    }
+                });
+
+                if (best) {
+                    results.push({ phase: target.phase, name: target.name, date: best.date, sampleDate: best.sampleDate });
+                }
+            });
+
+            results.sort((a, b) => a.date - b.date);
+            return results;
         }
 
         function formatDate(date) {
@@ -905,6 +1085,31 @@
                 month: 'short',
                 day: 'numeric'
             });
+        }
+
+        function formatDateTime(date) {
+            return date.toLocaleString(undefined, {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatUTCTime(date) {
+            return date.toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'UTC',
+                hour12: false
+            }) + ' UTC';
+        }
+
+        function formatDateWithTime(date) {
+            const local = formatDateTime(date);
+            const utc = formatUTCTime(date);
+            return `${local} · ${utc}`;
         }
 
         function formatMonthYear(date) {
@@ -1021,52 +1226,6 @@
             
             document.getElementById('results').innerHTML = html;
             updateInsights(year, month);
-        }
-
-        function getMoonPhaseForDate(date) {
-            // Known new moon: January 6, 2000, 18:14 UTC
-            const knownNewMoon = new Date(2000, 0, 6, 18, 14);
-            const lunarCycle = 29.53058867; // days
-            
-            // Calculate days since known new moon
-            const daysSince = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
-            
-            // Calculate current position in lunar cycle
-            const cyclePosition = ((daysSince % lunarCycle) + lunarCycle) % lunarCycle;
-            
-            // Determine phase
-            let phase, name;
-            
-            if (cyclePosition < 1.84566) {
-                phase = 'new';
-                name = 'New Moon';
-            } else if (cyclePosition < 5.53699) {
-                phase = 'waxing-crescent';
-                name = 'Waxing Crescent';
-            } else if (cyclePosition < 9.22831) {
-                phase = 'first-quarter';
-                name = 'First Quarter';
-            } else if (cyclePosition < 12.91963) {
-                phase = 'waxing-gibbous';
-                name = 'Waxing Gibbous';
-            } else if (cyclePosition < 16.61096) {
-                phase = 'full';
-                name = 'Full Moon';
-            } else if (cyclePosition < 20.30228) {
-                phase = 'waning-gibbous';
-                name = 'Waning Gibbous';
-            } else if (cyclePosition < 23.99361) {
-                phase = 'last-quarter';
-                name = 'Last Quarter';
-            } else {
-                phase = 'waning-crescent';
-                name = 'Waning Crescent';
-            }
-            
-            // Calculate illumination percentage
-            const illumination = Math.round((1 - Math.cos((cyclePosition / lunarCycle) * 2 * Math.PI)) * 50);
-            
-            return { phase, name, illumination };
         }
 
         function getMoonMiniVisual(phase, illumination) {
