@@ -831,6 +831,12 @@
             acc[phase.key] = phase.target;
             return acc;
         }, {});
+        const PHASE_TOLERANCES = {
+            'new': 0.02,
+            'first-quarter': 0.015,
+            'full': 0.012,
+            'last-quarter': 0.015
+        };
         const MAJOR_PHASE_THRESHOLD = 0.012;
         const MAJOR_PHASE_LEEWAY = 0.004;
         const PHASE_MATCH_TOLERANCE = 0.015;
@@ -928,12 +934,13 @@
             let bestPrimary = null;
 
             for (const phase of PRIMARY_PHASES) {
+                const tolerance = PHASE_TOLERANCES[phase.key] ?? MAJOR_PHASE_THRESHOLD;
                 const diff = phaseDistance(normalized, phase.target);
-                if (diff <= MAJOR_PHASE_THRESHOLD) {
+                if (diff <= tolerance) {
                     const signed = signedPhaseDelta(normalized, phase.target);
                     if (signed <= MAJOR_PHASE_LEEWAY) {
                         if (!bestPrimary || diff < bestPrimary.diff) {
-                            bestPrimary = { key: phase.key, name: phase.name, diff, signed, target: phase.target };
+                            bestPrimary = { key: phase.key, name: phase.name, diff, signed, target: phase.target, tolerance };
                         }
                     }
                 }
@@ -948,7 +955,8 @@
                         name: bestPrimary.name,
                         diff: bestPrimary.diff,
                         signed: bestPrimary.signed,
-                        target: bestPrimary.target
+                        target: bestPrimary.target,
+                        tolerance: bestPrimary.tolerance
                     }
                 };
             }
@@ -1100,7 +1108,7 @@
             const targetAge = PHASE_TARGETS[targetPhase];
             const limitMs = limitDate ? new Date(limitDate.getFullYear(), limitDate.getMonth(), limitDate.getDate()).getTime() : null;
             const maxDays = limitDate ? Math.ceil((limitMs - cursor.getTime()) / (1000 * 60 * 60 * 24)) + 60 : 160;
-            const tolerance = PHASE_MATCH_TOLERANCE;
+            const tolerance = PHASE_TOLERANCES[targetPhase] ?? PHASE_MATCH_TOLERANCE;
 
             for (let i = 0; i < maxDays; i++) {
                 const phaseInfo = getMoonPhaseForDate(cursor);
